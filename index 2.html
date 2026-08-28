@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Tether — drink safety</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171C; --surface:#1E2229; --surface-2:#262B33;
+    --text:#F5F3EE; --text-dim:#9BA3AE; --text-faint:#5F6772;
+    --teal:#4FBF9F; --teal-dim:#2B4A42;
+    --amber:#E8A33D; --amber-dim:#4A3A20;
+    --red:#E2574C; --red-dim:#4A2622;
+    --border:rgba(245,243,238,0.08);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#0B0D10;font-family:'Inter',sans-serif;display:flex;justify-content:center;padding:24px 12px;}
+  .frame{width:100%;max-width:400px;background:var(--bg);border-radius:36px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);}
+  .app{min-height:640px;display:flex;flex-direction:column;position:relative;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:600;margin:0;color:var(--text);}
+  .topbar{padding:22px 20px 14px;display:flex;align-items:center;justify-content:space-between;}
+  .topbar .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:var(--text);letter-spacing:0.02em;display:flex;align-items:center;gap:8px;}
+  .brand-dot{width:9px;height:9px;border-radius:50%;background:var(--teal);}
+  .session-pill{font-size:12px;color:var(--text-dim);background:var(--surface);padding:6px 12px;border-radius:100px;border:1px solid var(--border);}
+  .screen{flex:1;padding:6px 20px 16px;display:none;}
+  .screen.active{display:block;}
+  .banner{border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;}
+  .banner.amber{background:var(--amber-dim);border:1px solid rgba(232,163,61,0.3);}
+  .banner.red{background:var(--red-dim);border:1px solid rgba(226,87,76,0.35);}
+  .banner-icon{font-size:18px;line-height:1;margin-top:1px;}
+  .banner.amber .banner-icon{color:var(--amber);}
+  .banner.red .banner-icon{color:var(--red);}
+  .banner-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:var(--text);margin-bottom:2px;}
+  .banner-sub{font-size:12.5px;color:var(--text-dim);line-height:1.4;}
+  .section-label{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 10px;font-weight:600;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .drink-btn{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .12s ease, background .12s ease;}
+  .drink-btn:active{transform:scale(0.94);background:var(--surface-2);}
+  .drink-btn svg{width:30px;height:30px;}
+  .drink-btn span{font-size:12px;color:var(--text-dim);font-weight:500;text-align:center;}
+  .toast{position:absolute;left:20px;right:20px;bottom:96px;background:var(--teal);color:#0B1F1A;padding:13px 16px;border-radius:14px;font-size:13.5px;font-weight:600;text-align:center;opacity:0;transform:translateY(8px);transition:all .25s ease;pointer-events:none;font-family:'Inter',sans-serif;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .navbar{display:flex;border-top:1px solid var(--border);background:var(--bg);}
+  .nav-btn{flex:1;background:none;border:none;padding:14px 0 16px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:var(--text-faint);}
+  .nav-btn.active{color:var(--teal);}
+  .nav-btn svg{width:24px;height:24px;}
+  .nav-btn span{font-size:11px;font-weight:600;font-family:'Space Grotesk',sans-serif;}
+
+  .ring-wrap{display:flex;flex-direction:column;align-items:center;padding:14px 0 6px;}
+  .ring-num{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:700;color:var(--text);}
+  .ring-label{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  .stat-card{background:var(--surface);border-radius:14px;padding:14px;text-align:center;}
+  .stat-card .v{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--text);}
+  .stat-card .l{font-size:11.5px;color:var(--text-faint);margin-top:2px;}
+  .log-list{margin-top:16px;}
+  .log-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .log-row:last-child{border-bottom:none;}
+  .log-row .t{color:var(--text-faint);font-variant-numeric:tabular-nums;}
+  .log-row .n{color:var(--text);}
+  .empty{text-align:center;color:var(--text-faint);font-size:13.5px;padding:30px 10px;}
+
+  .safety-btn{width:100%;border:none;border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:12px;text-align:left;text-decoration:none;box-sizing:border-box;}
+  .safety-btn.primary{background:var(--red);}
+  .safety-btn.primary .st{color:#fff;}
+  .safety-btn.primary .ss{color:rgba(255,255,255,0.85);}
+  .safety-btn.secondary{background:var(--surface);border:1px solid var(--border);}
+  .safety-btn.secondary .st{color:var(--text);}
+  .safety-btn.secondary .ss{color:var(--text-dim);}
+  .safety-btn .icon{width:34px;height:34px;flex-shrink:0;}
+  .safety-btn.primary .icon{color:#fff;}
+  .safety-btn.secondary .icon{color:var(--teal);}
+  .st{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;}
+  .ss{font-size:12.5px;margin-top:2px;}
+
+  .sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:flex-end;z-index:10;border-radius:36px;overflow:hidden;}
+  .sheet-backdrop.show{display:flex;}
+  .sheet{background:var(--surface);width:100%;border-radius:24px 24px 0 0;padding:20px 20px 26px;}
+  .sheet h3{font-size:17px;margin-bottom:4px;}
+  .sheet .sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px;}
+  .size-opt{display:flex;justify-content:space-between;align-items:center;background:var(--surface-2);border-radius:12px;padding:14px 16px;margin-bottom:9px;cursor:pointer;border:1px solid transparent;}
+  .size-opt:active{border-color:var(--teal);}
+  .size-opt .n{font-size:14.5px;color:var(--text);font-weight:500;}
+  .size-opt .n2{font-size:12px;color:var(--text-faint);margin-top:2px;}
+  .size-opt .sd{font-size:12.5px;color:var(--teal);font-weight:600;}
+  .cancel{width:100%;background:none;border:none;color:var(--text-faint);font-size:14px;padding:12px 0 0;font-family:'Inter',sans-serif;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="frame"><div class="app" id="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-dot"></span>tether</div>
+    <div class="session-pill" id="session-pill">new session</div>
+  </div>
+
+  <div class="screen active" id="screen-log">
+    <div id="banners"></div>
+    <div class="section-label">Log a drink</div>
+    <div class="grid" id="drink-grid"></div>
+    <div class="section-label">Or</div>
+    <div class="grid" style="grid-template-columns:1fr;">
+      <div class="drink-btn" style="flex-direction:row;justify-content:center;padding:14px;" onclick="logWater()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--teal)"><path d="M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13z"/></svg>
+        <span style="font-size:13.5px;color:var(--text);font-weight:600;">log water</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-status">
+    <div id="banners2"></div>
+    <div class="ring-wrap">
+      <svg width="150" height="150" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="62" fill="none" stroke="var(--surface-2)" stroke-width="12"/>
+        <circle id="ring-progress" cx="75" cy="75" r="62" fill="none" stroke="var(--teal)" stroke-width="12" stroke-linecap="round" stroke-dasharray="389.6" stroke-dashoffset="389.6" transform="rotate(-90 75 75)"/>
+      </svg>
+      <div style="margin-top:-98px;text-align:center;">
+        <div class="ring-num" id="ring-num">0.0</div>
+        <div class="ring-label">standard drinks</div>
+      </div>
+      <div style="height:14px;"></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="v" id="stat-since">—</div><div class="l">since last drink</div></div>
+      <div class="stat-card"><div class="v" id="stat-water">—</div><div class="l">since water</div></div>
+    </div>
+    <div class="section-label">Tonight</div>
+    <div class="log-list" id="log-list"></div>
+  </div>
+
+  <div class="screen" id="screen-safety">
+    <a class="safety-btn primary" href="https://m.uber.com/ul/" target="_blank" rel="noopener">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 17h14M6 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm16 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM3 17l1.5-6a2 2 0 0 1 2-1.5h11a2 2 0 0 1 2 1.5L21 17"/></svg>
+      <div><div class="st">Get a ride home</div><div class="ss">Opens Uber, or your default ride app</div></div>
+    </a>
+    <button class="safety-btn secondary" onclick="pauseAction()">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div><div class="st">Pause and wait it out</div><div class="ss" id="pause-sub">Starts a 15 minute timer</div></div>
+    </button>
+    <a class="safety-btn secondary" href="sms:?&body=Hey%2C%20I%27m%20out%20drinking%20tonight%20%E2%80%94%20can%20you%20check%20in%20on%20me%20later%3F">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div><div class="st">Text a friend to check in</div><div class="ss">Pre-fills a check-in message</div></div>
+    </a>
+    <div id="driving-banner"></div>
+  </div>
+
+  <div class="sheet-backdrop" id="sheet-backdrop">
+    <div class="sheet">
+      <h3 id="sheet-title">Beer</h3>
+      <div class="sub">Choose a size</div>
+      <div id="sheet-options"></div>
+      <button class="cancel" onclick="closeSheet()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="navbar">
+    <button class="nav-btn active" id="nav-log" onclick="showScreen('log')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Log</span>
+    </button>
+    <button class="nav-btn" id="nav-status" onclick="showScreen('status')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l5-5 4 4 8-8M14 8h6v6"/></svg>
+      <span>Status</span>
+    </button>
+    <button class="nav-btn" id="nav-safety" onclick="showScreen('safety')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg>
+      <span>Safety</span>
+    </button>
+  </div>
+
+</div></div>
+
+<script>
+const ICONS = {
+  beer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 8h11v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M16 10h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/><path d="M5 8V6a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v2"/></svg>',
+  wine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3h10l-1 8a4 4 0 0 1-8 0z"/><path d="M12 15v6M8 21h8"/></svg>',
+  shot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 4h10l-1.5 15a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1z"/></svg>',
+  cocktail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8"/></svg>',
+  seltzer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M7 9h10"/></svg>',
+  bottle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2h4v4l2 3v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9l2-3z"/></svg>'
+};
+
+const CATALOG = [
+  {id:'beer', name:'Beer', icon:'beer', abv:0.05, sizes:[{l:'12 oz can',oz:12},{l:'16 oz pint',oz:16},{l:'22 oz bomber',oz:22}]},
+  {id:'wine', name:'Wine', icon:'wine', abv:0.13, sizes:[{l:'5 oz glass',oz:5},{l:'8 oz pour',oz:8}]},
+  {id:'shot', name:'Shot', icon:'shot', abv:0.40, sizes:[{l:'1.5 oz shot',oz:1.5},{l:'2 oz double',oz:3}]},
+  {id:'cocktail', name:'Cocktail', icon:'cocktail', abv:0.18, sizes:[{l:'5 oz standard',oz:5},{l:'8 oz strong pour',oz:8}]},
+  {id:'seltzer', name:'Seltzer', icon:'seltzer', abv:0.05, sizes:[{l:'12 oz can',oz:12},{l:'16 oz can',oz:16}]},
+  {id:'other', name:'Other', icon:'bottle', abv:0.12, sizes:[{l:'Small pour',oz:5},{l:'Standard pour',oz:8}]}
+];
+
+let entries = [];
+let sessionStart = Date.now();
+let currentDrink = null;
+let ticker = null;
+let pauseUntil = null;
+
+async function loadPause(){
+  try{
+    const res = await window.storage.get('tether:pauseUntil', false);
+    if(res && res.value){ pauseUntil = JSON.parse(res.value); }
+  }catch(e){ pauseUntil = null; }
+  updatePauseTimer();
+}
+async function savePause(){
+  try{ await window.storage.set('tether:pauseUntil', JSON.stringify(pauseUntil), false); }catch(e){}
+}
+function updatePauseTimer(){
+  const sub = document.getElementById('pause-sub');
+  if(!sub) return;
+  if(pauseUntil && pauseUntil > Date.now()){
+    const remaining = Math.ceil((pauseUntil - Date.now())/1000);
+    const mm = Math.floor(remaining/60);
+    const ss = String(remaining%60).padStart(2,'0');
+    sub.textContent = `Resume in ${mm}:${ss} — tap to cancel`;
+  } else {
+    if(pauseUntil){ pauseUntil = null; savePause(); showToast('Pause timer finished'); }
+    sub.textContent = 'Starts a 15 minute timer';
+  }
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get('tether:entries', false);
+    if(res && res.value){ entries = JSON.parse(res.value); }
+  }catch(e){ entries = []; }
+  render();
+}
+async function saveState(){
+  try{ await window.storage.set('tether:entries', JSON.stringify(entries), false); }catch(e){}
+}
+
+function buildGrid(){
+  const grid = document.getElementById('drink-grid');
+  grid.innerHTML = CATALOG.map(d => `
+    <div class="drink-btn" onclick="openSheet('${d.id}')">
+      ${ICONS[d.icon]}
+      <span>${d.name}</span>
+    </div>`).join('');
+}
+
+function openSheet(id){
+  currentDrink = CATALOG.find(d => d.id === id);
+  document.getElementById('sheet-title').textContent = currentDrink.name;
+  const opts = document.getElementById('sheet-options');
+  opts.innerHTML = currentDrink.sizes.map((s,i) => {
+    const sd = (s.oz * currentDrink.abv / 0.6).toFixed(1);
+    return `<div class="size-opt" onclick="logDrink(${i})">
+      <div><div class="n">${s.l}</div><div class="n2">${Math.round(currentDrink.abv*100)}% ABV</div></div>
+      <div class="sd">${sd} std</div>
+    </div>`;
+  }).join('');
+  document.getElementById('sheet-backdrop').classList.add('show');
+}
+function closeSheet(){ document.getElementById('sheet-backdrop').classList.remove('show'); }
+
+function logDrink(sizeIdx){
+  const s = currentDrink.sizes[sizeIdx];
+  const std = s.oz * currentDrink.abv / 0.6;
+  entries.push({type:'drink', name:currentDrink.name, oz:s.oz, abv:currentDrink.abv, std, ts:Date.now()});
+  saveState();
+  closeSheet();
+  showToast(`Logged ${currentDrink.name.toLowerCase()}, ${s.l.toLowerCase()}`);
+  render();
+}
+function logWater(){
+  entries.push({type:'water', ts:Date.now()});
+  saveState();
+  showToast('Logged water');
+  render();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function computeState(){
+  const drinks = entries.filter(e => e.type === 'drink');
+  const totalStd = drinks.reduce((s,e) => s + e.std, 0);
+  const lastDrink = drinks.length ? drinks[drinks.length-1].ts : null;
+  const waters = entries.filter(e => e.type === 'water');
+  const lastWater = waters.length ? waters[waters.length-1].ts : sessionStart;
+  const now = Date.now();
+  const minsSinceDrink = lastDrink ? Math.floor((now-lastDrink)/60000) : null;
+  const minsSinceWater = Math.floor((now-lastWater)/60000);
+  const last60 = drinks.filter(e => (now-e.ts) <= 3600000).length;
+  const hour = new Date().getHours();
+  const hangover = totalStd >= 4 || hour >= 23 || hour < 4;
+  const drivingSafeMins = lastDrink ? Math.max(0, Math.round(totalStd*60) - minsSinceDrink) : 0;
+  return {totalStd, minsSinceDrink, minsSinceWater, last60, hangover, drivingSafeMins, drinkCount: drinks.length};
+}
+
+function fmtMins(m){
+  if(m === null) return '—';
+  if(m < 60) return m + 'm';
+  return Math.floor(m/60) + 'h ' + (m%60) + 'm';
+}
+
+function render(){
+  const st = computeState();
+  document.getElementById('session-pill').textContent = st.drinkCount === 0 ? 'new session' : st.drinkCount + ' logged';
+
+  const pct = Math.min(st.totalStd / 6, 1);
+  const circumference = 389.6;
+  document.getElementById('ring-progress').style.strokeDashoffset = circumference - pct*circumference;
+  document.getElementById('ring-progress').style.stroke = st.totalStd >= 4 ? 'var(--red)' : st.totalStd >= 2 ? 'var(--amber)' : 'var(--teal)';
+  document.getElementById('ring-num').textContent = st.totalStd.toFixed(1);
+
+  document.getElementById('stat-since').textContent = fmtMins(st.minsSinceDrink);
+  document.getElementById('stat-water').textContent = fmtMins(st.minsSinceWater);
+
+  const drinks = entries.filter(e => e.type === 'drink').slice().reverse();
+  const list = document.getElementById('log-list');
+  if(drinks.length === 0){
+    list.innerHTML = '<div class="empty">Nothing logged yet tonight</div>';
+  } else {
+    list.innerHTML = drinks.map(e => {
+      const t = new Date(e.ts).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      return `<div class="log-row"><span class="t">${t}</span><span class="n">${e.name}, ${e.oz} oz</span></div>`;
+    }).join('');
+  }
+
+  const banners = [];
+  if(st.minsSinceWater >= 45){
+    banners.push({sev:'amber', title:'Hydrate soon', sub:'It has been a while since water. Drink a glass now.'});
+  }
+  if(st.last60 >= 2){
+    banners.push({sev:'amber', title:'Slow down', sub:'Two or more drinks in the last hour. Try pacing yourself.'});
+  }
+  if(st.hangover){
+    banners.push({sev:'amber', title:'Consider stopping soon', sub:'Current pace raises tomorrow-morning risk.'});
+  }
+  if(st.drinkCount > 0 && st.drivingSafeMins > 0){
+    banners.push({sev:'red', title:'Not safe to drive yet', sub:`Wait about ${fmtMins(st.drivingSafeMins)} more, or get a ride.`});
+  }
+  const bannerHtml = banners.map(b => `
+    <div class="banner ${b.sev}">
+      <div class="banner-icon">${b.sev === 'red' ? '⛔' : '⚠'}</div>
+      <div><div class="banner-title">${b.title}</div><div class="banner-sub">${b.sub}</div></div>
+    </div>`).join('');
+  document.getElementById('banners').innerHTML = bannerHtml;
+  document.getElementById('banners2').innerHTML = bannerHtml;
+
+  const drivingBanner = document.getElementById('driving-banner');
+  if(st.drinkCount > 0){
+    drivingBanner.innerHTML = `
+      <div class="banner ${st.drivingSafeMins > 0 ? 'red' : 'amber'}" style="margin-top:4px;">
+        <div class="banner-icon">${st.drivingSafeMins > 0 ? '⛔' : '⚠'}</div>
+        <div><div class="banner-title">${st.drivingSafeMins > 0 ? 'Not safe to drive yet' : 'Estimate has passed, still use judgment'}</div>
+        <div class="banner-sub">${st.drivingSafeMins > 0 ? `About ${fmtMins(st.drivingSafeMins)} left on this rough estimate.` : 'This is a rough estimate, not a measurement. When in doubt, get a ride.'}</div></div>
+      </div>`;
+  } else {
+    drivingBanner.innerHTML = '';
+  }
+}
+
+function showScreen(name){
+  ['log','status','safety'].forEach(n => {
+    document.getElementById('screen-'+n).classList.toggle('active', n===name);
+    document.getElementById('nav-'+n).classList.toggle('active', n===name);
+  });
+}
+
+function pauseAction(){
+  if(pauseUntil && pauseUntil > Date.now()){
+    pauseUntil = null;
+    showToast('Pause timer cancelled');
+  } else {
+    pauseUntil = Date.now() + 15*60000;
+    showToast('15 minute timer started');
+  }
+  savePause();
+  updatePauseTimer();
+}
+
+buildGrid();
+loadState();
+loadPause();
+ticker = setInterval(render, 30000);
+setInterval(updatePauseTimer, 1000);
+</script>
+</body>
+</html>
