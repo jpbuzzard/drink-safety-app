@@ -404,6 +404,7 @@ function fmtMins(m){
 
 function render(){
   const st = computeState();
+  const hg = computeHangover();
   document.getElementById('session-pill').textContent = st.drinkCount === 0 ? 'new session' : st.drinkCount + ' logged';
 
   const pct = Math.min(st.totalStd / 6, 1);
@@ -414,6 +415,17 @@ function render(){
 
   document.getElementById('stat-since').textContent = fmtMins(st.minsSinceDrink);
   document.getElementById('stat-water').textContent = fmtMins(st.minsSinceWater);
+
+  const hbFill = document.getElementById('hbar-fill');
+  const hbTag = document.getElementById('hbar-tag');
+  const hbNote = document.getElementById('hbar-note');
+  hbFill.style.width = hg.score + '%';
+  hbFill.style.background = hg.band === 'high' ? 'var(--orange)' : hg.band === 'moderate' ? 'var(--amber)' : 'var(--teal)';
+  hbTag.textContent = hg.band === 'high' ? 'building up' : hg.band === 'moderate' ? 'moderate' : 'on track';
+  hbTag.style.color = hg.band === 'high' ? 'var(--orange)' : hg.band === 'moderate' ? 'var(--amber)' : 'var(--teal)';
+  hbNote.textContent = (hg.waters+hg.foods) > 0
+    ? `${hg.waters} water, ${hg.foods} food logged — offsetting it some.`
+    : 'A water or a bite to eat now would help offset this.';
 
   const drinks = entries.filter(e => e.type === 'drink').slice().reverse();
   const list = document.getElementById('log-list');
@@ -433,8 +445,10 @@ function render(){
   if(st.last60 >= 2){
     banners.push({id:'pace', sev:'amber', title:'Slow down', sub:'Two or more drinks in the last hour. Try pacing yourself.'});
   }
-  if(st.hangover){
-    banners.push({id:'hangover', sev:'amber', title:'Consider stopping soon', sub:'Current pace raises tomorrow-morning risk.'});
+  if(hg.band === 'high'){
+    banners.push({id:'hangover', sev:'amber', title:'Hangover risk building up', sub:'Water or food now can help. Your drive-wait estimate is unaffected.'});
+  } else if(hg.band === 'moderate'){
+    banners.push({id:'hangover', sev:'amber', title:'Worth pacing yourself', sub:'Tonight is trending toward a rougher tomorrow.'});
   }
   if(st.drinkCount > 0 && st.drivingSafeMins > 0){
     banners.push({id:'driving', sev:'red', title:'Not safe to drive yet', sub:`Wait about ${fmtMins(st.drivingSafeMins)} more, or get a ride.`});
